@@ -7,6 +7,7 @@ import { Upload, Download, Eye, FileText, Image as ImageIcon, Loader2, Archive }
 import JSZip from "jszip";
 import GlyphDetailPanel from "@/components/GlyphDetailPanel";
 import GlyphPreviewCanvas from "@/components/GlyphPreviewCanvas";
+import SideBySideComparison from "@/components/SideBySideComparison";
 
 const Index = () => {
   const [nlgData, setNlgData] = useState<NLGData | null>(null);
@@ -220,23 +221,11 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            {/* Comparison with original */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">مقارنة مع الخط الأصلي</CardTitle>
-                <CardDescription>الصورة الأصلية (gb_3.png)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="border border-border rounded-lg overflow-auto bg-foreground p-2">
-                  <img
-                    src="/fonts/gb_3.png"
-                    alt="الخط الأصلي"
-                    className="max-w-full"
-                    style={{ imageRendering: "pixelated" }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            {/* Side-by-side comparison */}
+            <SideBySideComparison
+              newImageUrl={previewUrls[selectedPage]}
+              originalImageUrl="/fonts/gb_3.png"
+            />
           </>
         )}
       </div>
