@@ -169,6 +169,10 @@ const Index = () => {
                 <ImageIcon className="h-4 w-4" />
                 تحميل الصور ({result.pages.length} صفحة)
               </Button>
+              <Button onClick={downloadZip} variant="outline" className="gap-2">
+                <Archive className="h-4 w-4" />
+                تحميل الكل (ZIP)
+              </Button>
             </div>
 
             {/* Preview */}
