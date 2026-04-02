@@ -1,9 +1,11 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { parseNLG, generateNLGText, type NLGData } from "@/lib/nlgParser";
+import { parseNLG, generateNLGText, type NLGData, type NLGGlyph } from "@/lib/nlgParser";
 import { renderFont, canvasesToBlob, type RenderedResult } from "@/lib/fontRenderer";
 import { Upload, Download, Eye, FileText, Image as ImageIcon, Loader2 } from "lucide-react";
+import GlyphDetailPanel from "@/components/GlyphDetailPanel";
+import GlyphPreviewCanvas from "@/components/GlyphPreviewCanvas";
 
 const Index = () => {
   const [nlgData, setNlgData] = useState<NLGData | null>(null);
@@ -13,6 +15,7 @@ const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [fontName, setFontName] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState(false);
+  const [selectedGlyph, setSelectedGlyph] = useState<NLGGlyph | null>(null);
 
   // Load the reference NLG file on mount
   const loadReference = useCallback(async () => {
@@ -164,7 +167,7 @@ const Index = () => {
                       key={i}
                       size="sm"
                       variant={selectedPage === i ? "default" : "outline"}
-                      onClick={() => setSelectedPage(i)}
+                      onClick={() => { setSelectedPage(i); setSelectedGlyph(null); }}
                       className="w-10 h-8 text-xs"
                     >
                       {i + 1}
@@ -172,15 +175,24 @@ const Index = () => {
                   ))}
                 </div>
 
-                {/* Image preview */}
+                {/* Image preview with clickable glyphs */}
                 <div className="border border-border rounded-lg overflow-auto bg-muted/30 p-2">
-                  <img
-                    src={previewUrls[selectedPage]}
-                    alt={`صفحة ${selectedPage + 1}`}
-                    className="max-w-full"
-                    style={{ imageRendering: "pixelated" }}
+                  <GlyphPreviewCanvas
+                    imageUrl={previewUrls[selectedPage]}
+                    glyphs={result.glyphs}
+                    pageIndex={selectedPage}
+                    selectedGlyph={selectedGlyph}
+                    onGlyphClick={setSelectedGlyph}
                   />
                 </div>
+
+                {/* Glyph detail panel */}
+                {selectedGlyph && (
+                  <GlyphDetailPanel
+                    glyph={selectedGlyph}
+                    onClose={() => setSelectedGlyph(null)}
+                  />
+                )}
               </CardContent>
             </Card>
 
