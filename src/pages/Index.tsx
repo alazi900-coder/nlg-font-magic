@@ -15,6 +15,7 @@ const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [fontName, setFontName] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState(false);
+  const [selectedGlyph, setSelectedGlyph] = useState<NLGGlyph | null>(null);
 
   // Load the reference NLG file on mount
   const loadReference = useCallback(async () => {
