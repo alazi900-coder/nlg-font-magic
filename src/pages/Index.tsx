@@ -176,7 +176,7 @@ const Index = () => {
                 </div>
 
                 {/* Image preview with clickable glyphs */}
-                <div className="border border-border rounded-lg overflow-auto bg-muted/30 p-2">
+                <div className="border border-border rounded-lg overflow-auto bg-black p-2">
                   <GlyphPreviewCanvas
                     imageUrl={previewUrls[selectedPage]}
                     glyphs={result.glyphs}
