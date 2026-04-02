@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseNLG, generateNLGText, type NLGData, type NLGGlyph } from "@/lib/nlgParser";
 import { renderFont, canvasesToBlob, type RenderedResult } from "@/lib/fontRenderer";
-import { Upload, Download, Eye, FileText, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Upload, Download, Eye, FileText, Image as ImageIcon, Loader2, Archive } from "lucide-react";
+import JSZip from "jszip";
 import GlyphDetailPanel from "@/components/GlyphDetailPanel";
 import GlyphPreviewCanvas from "@/components/GlyphPreviewCanvas";
 
@@ -84,6 +85,25 @@ const Index = () => {
     });
   };
 
+  const downloadZip = async () => {
+    if (!result || !nlgData) return;
+    const zip = new JSZip();
+    const name = fontName || "font";
+    const text = generateNLGText(result.header, result.glyphs, name);
+    zip.file(`${name}.txt`, text);
+    const blobs = await canvasesToBlob(result.pages);
+    blobs.forEach((blob, i) => {
+      zip.file(`${name}_page${i}.png`, blob);
+    });
+    const content = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8" dir="rtl">
       <div className="mx-auto max-w-5xl space-y-6">
@@ -148,6 +168,10 @@ const Index = () => {
               <Button onClick={downloadImages} variant="secondary" className="gap-2">
                 <ImageIcon className="h-4 w-4" />
                 تحميل الصور ({result.pages.length} صفحة)
+              </Button>
+              <Button onClick={downloadZip} variant="outline" className="gap-2">
+                <Archive className="h-4 w-4" />
+                تحميل الكل (ZIP)
               </Button>
             </div>
 
