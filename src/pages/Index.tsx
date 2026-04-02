@@ -121,8 +121,22 @@ const Index = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">ملف المرجع</CardTitle>
-              <CardDescription>gb_3.txt — {nlgData.glyphs.length} حرف، {nlgData.header.pageCount} صفحة</CardDescription>
+              <CardDescription>gb_3.txt</CardDescription>
             </CardHeader>
+            <CardContent className="grid grid-cols-3 gap-4 text-center">
+              <div className="space-y-1">
+                <p className="text-2xl font-bold text-primary">{nlgData.glyphs.length}</p>
+                <p className="text-xs text-muted-foreground">حرف محلّل</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold text-primary">{nlgData.header.pageCount}</p>
+                <p className="text-xs text-muted-foreground">صفحة</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold text-primary">{nlgData.header.fontSize}</p>
+                <p className="text-xs text-muted-foreground">حجم الخط</p>
+              </div>
+            </CardContent>
           </Card>
         )}
 
