@@ -239,6 +239,8 @@ const Index = () => {
             <SideBySideComparison
               newImageUrl={previewUrls[selectedPage]}
               originalImageUrl="/fonts/gb_3.png"
+              pageIndex={selectedPage}
+              totalPages={previewUrls.length}
             />
           </>
         )}
