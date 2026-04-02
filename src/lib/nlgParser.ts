@@ -91,7 +91,7 @@ export function parseNLG(text: string): NLGData {
     if (line === "END" || line === "") continue;
 
     // Glyph <CHAR_OR_UNICODE> Width <col1> <col2> <col3> <x1> <y1> <x2> <y2> <page>
-    const match = line.match(/^Glyph\s+(.+?)\s+Width\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)$/);
+    const match = line.match(/^Glyph\s+(.+?)\s+Width\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)$/);
     if (!match) continue;
 
     const charOrUnicode = match[1];
