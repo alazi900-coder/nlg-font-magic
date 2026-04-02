@@ -221,23 +221,11 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            {/* Comparison with original */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">مقارنة مع الخط الأصلي</CardTitle>
-                <CardDescription>الصورة الأصلية (gb_3.png)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="border border-border rounded-lg overflow-auto bg-foreground p-2">
-                  <img
-                    src="/fonts/gb_3.png"
-                    alt="الخط الأصلي"
-                    className="max-w-full"
-                    style={{ imageRendering: "pixelated" }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            {/* Side-by-side comparison */}
+            <SideBySideComparison
+              newImageUrl={previewUrls[selectedPage]}
+              originalImageUrl="/fonts/gb_3.png"
+            />
           </>
         )}
       </div>
