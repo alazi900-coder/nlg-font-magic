@@ -7,14 +7,19 @@ import { GitCompareArrows, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 interface SideBySideComparisonProps {
   newImageUrl: string;
   originalImageUrl: string;
+  pageIndex: number;
+  totalPages: number;
 }
 
-const SideBySideComparison = ({ newImageUrl, originalImageUrl }: SideBySideComparisonProps) => {
+const SideBySideComparison = ({ newImageUrl, originalImageUrl, pageIndex, totalPages }: SideBySideComparisonProps) => {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Only page 0 has an original image reference
+  const hasOriginal = pageIndex === 0;
 
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
@@ -27,6 +32,12 @@ const SideBySideComparison = ({ newImageUrl, originalImageUrl }: SideBySideCompa
     el.addEventListener("wheel", handleWheel, { passive: false });
     return () => el.removeEventListener("wheel", handleWheel);
   }, [handleWheel]);
+
+  // Reset zoom/pan when page changes
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, [pageIndex]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     setIsPanning(true);
@@ -59,6 +70,7 @@ const SideBySideComparison = ({ newImageUrl, originalImageUrl }: SideBySideCompa
     transformOrigin: "top left",
     imageRendering: "pixelated",
     transition: isPanning ? "none" : "transform 0.15s ease",
+    width: "100%",
   };
 
   return (
@@ -66,7 +78,7 @@ const SideBySideComparison = ({ newImageUrl, originalImageUrl }: SideBySideCompa
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <GitCompareArrows className="h-5 w-5" />
-          مقارنة جنب-لجنب
+          مقارنة جنب-لجنب — صفحة {pageIndex + 1}
         </CardTitle>
         <div className="flex items-center gap-3 flex-wrap pt-2">
           <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.min(8, z + 0.5))}>
@@ -95,7 +107,7 @@ const SideBySideComparison = ({ newImageUrl, originalImageUrl }: SideBySideCompa
       <CardContent>
         <div
           ref={containerRef}
-          className="grid grid-cols-2 gap-2 select-none"
+          className={`grid ${hasOriginal ? 'grid-cols-2' : 'grid-cols-1'} gap-2 select-none`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -108,17 +120,24 @@ const SideBySideComparison = ({ newImageUrl, originalImageUrl }: SideBySideCompa
           {/* New font */}
           <div className="space-y-1">
             <p className="text-xs text-center text-primary font-semibold">الخط الجديد</p>
-            <div className="border border-border rounded-lg overflow-hidden bg-foreground h-[300px] md:h-[500px]">
+            <div className="border border-border rounded-lg overflow-hidden bg-black aspect-square">
               <img src={newImageUrl} alt="الخط الجديد" className="max-w-none" style={imageStyle} />
             </div>
           </div>
-          {/* Original font */}
-          <div className="space-y-1">
-            <p className="text-xs text-center text-muted-foreground font-semibold">الخط الأصلي</p>
-            <div className="border border-border rounded-lg overflow-hidden bg-foreground h-[300px] md:h-[500px]">
-              <img src={originalImageUrl} alt="الخط الأصلي" className="max-w-none" style={imageStyle} />
+          {/* Original font - only for page 0 */}
+          {hasOriginal && (
+            <div className="space-y-1">
+              <p className="text-xs text-center text-muted-foreground font-semibold">الخط الأصلي</p>
+              <div className="border border-border rounded-lg overflow-hidden bg-black aspect-square">
+                <img src={originalImageUrl} alt="الخط الأصلي" className="max-w-none" style={imageStyle} />
+              </div>
             </div>
-          </div>
+          )}
+          {!hasOriginal && (
+            <p className="text-xs text-center text-muted-foreground col-span-1">
+              الصورة الأصلية متاحة فقط للصفحة 1
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
