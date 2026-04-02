@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseNLG, generateNLGText, type NLGData, type NLGGlyph } from "@/lib/nlgParser";
 import { renderFont, canvasesToBlob, type RenderedResult } from "@/lib/fontRenderer";
-import { Upload, Download, Eye, FileText, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Upload, Download, Eye, FileText, Image as ImageIcon, Loader2, Archive } from "lucide-react";
+import JSZip from "jszip";
 import GlyphDetailPanel from "@/components/GlyphDetailPanel";
 import GlyphPreviewCanvas from "@/components/GlyphPreviewCanvas";
 
