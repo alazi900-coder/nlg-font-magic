@@ -373,6 +373,10 @@ ${nlgData.rawHeaderLines.join("\n")}
                 <GitCompare className="h-4 w-4" />
                 مقارنة الإحداثيات
               </Button>
+              <Button onClick={generateReport} variant="outline" className="gap-2">
+                <Bug className="h-4 w-4" />
+                تقرير تشخيصي
+              </Button>
             </div>
 
             {/* Diff View */}
