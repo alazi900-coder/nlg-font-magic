@@ -246,6 +246,8 @@ ${nlgData.rawHeaderLines.join("\n")}
       URL.revokeObjectURL(url);
     });
   };
+
+  return (
     <div className="min-h-screen bg-background p-4 md:p-8" dir="rtl">
       <div className="mx-auto max-w-5xl space-y-6">
         {/* Version Banner */}
