@@ -272,9 +272,9 @@ ${nlgData.rawHeaderLines.join("\n")}
 
         {/* Stats */}
         {nlgData && (
-          <Card>
+          <Card className="glass-card">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">ملف المرجع</CardTitle>
+              <CardTitle className="text-lg">📄 ملف المرجع</CardTitle>
               <CardDescription className="flex items-center gap-2">
                 <span>{nlgFileName}</span>
                 {useCustomNlg && (
@@ -285,15 +285,15 @@ ${nlgData.rawHeaderLines.join("\n")}
               </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-3 gap-4 text-center">
-              <div className="space-y-1">
+              <div className="rounded-xl bg-primary/10 p-4 space-y-1">
                 <p className="text-2xl font-bold text-primary">{nlgData.glyphs.length}</p>
                 <p className="text-xs text-muted-foreground">حرف محلّل</p>
               </div>
-              <div className="space-y-1">
+              <div className="rounded-xl bg-primary/10 p-4 space-y-1">
                 <p className="text-2xl font-bold text-primary">{nlgData.header.pageCount}</p>
                 <p className="text-xs text-muted-foreground">صفحة</p>
               </div>
-              <div className="space-y-1">
+              <div className="rounded-xl bg-primary/10 p-4 space-y-1">
                 <p className="text-2xl font-bold text-primary">{nlgData.header.fontSize}</p>
                 <p className="text-xs text-muted-foreground">حجم الخط</p>
               </div>
