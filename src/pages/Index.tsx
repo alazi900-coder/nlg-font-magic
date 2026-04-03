@@ -1,9 +1,9 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseNLG, generateNLGText, type NLGData, type NLGGlyph } from "@/lib/nlgParser";
 import { renderFont, canvasesToBlob, type RenderedResult } from "@/lib/fontRenderer";
-import { Upload, Download, Eye, FileText, Image as ImageIcon, Loader2, Archive } from "lucide-react";
+import { Upload, Download, Eye, FileText, Image as ImageIcon, Loader2, Archive, GitCompare } from "lucide-react";
 import JSZip from "jszip";
 import GlyphDetailPanel from "@/components/GlyphDetailPanel";
 import GlyphPreviewCanvas from "@/components/GlyphPreviewCanvas";
@@ -18,6 +18,8 @@ const Index = () => {
   const [fontName, setFontName] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState(false);
   const [selectedGlyph, setSelectedGlyph] = useState<NLGGlyph | null>(null);
+  const [showDiff, setShowDiff] = useState(false);
+  const [originalText, setOriginalText] = useState<string>("");
 
   // Load the reference NLG file on mount
   const loadReference = useCallback(async () => {
@@ -25,6 +27,7 @@ const Index = () => {
     try {
       const response = await fetch("/fonts/gb_3.txt");
       const text = await response.text();
+      setOriginalText(text);
       const data = parseNLG(text);
       setNlgData(data);
       setIsLoaded(true);
@@ -60,6 +63,33 @@ const Index = () => {
       setIsProcessing(false);
     }
   };
+
+  const getGeneratedText = useCallback(() => {
+    if (!result || !nlgData) return "";
+    return generateNLGText(result.header, result.glyphs, fontName || undefined, nlgData.rawHeaderLines);
+  }, [result, nlgData, fontName]);
+
+  // Compute diff between original and generated
+  const diffLines = useMemo(() => {
+    if (!showDiff || !result || !nlgData) return [];
+    const origLines = originalText.split(/\r?\n/);
+    const newText = getGeneratedText();
+    const newLines = newText.split(/\r?\n/);
+    const maxLen = Math.max(origLines.length, newLines.length);
+    const diffs: { line: number; original: string; generated: string; status: "same" | "changed" | "added" | "removed" }[] = [];
+    for (let i = 0; i < maxLen; i++) {
+      const orig = origLines[i] ?? "";
+      const gen = newLines[i] ?? "";
+      if (i >= origLines.length) {
+        diffs.push({ line: i + 1, original: "", generated: gen, status: "added" });
+      } else if (i >= newLines.length) {
+        diffs.push({ line: i + 1, original: orig, generated: "", status: "removed" });
+      } else if (orig !== gen) {
+        diffs.push({ line: i + 1, original: orig, generated: gen, status: "changed" });
+      }
+    }
+    return diffs;
+  }, [showDiff, result, nlgData, originalText, getGeneratedText]);
 
   const downloadTxt = () => {
     if (!result || !nlgData) return;
@@ -108,6 +138,11 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8" dir="rtl">
       <div className="mx-auto max-w-5xl space-y-6">
+        {/* Version Banner */}
+        <div className="bg-primary text-primary-foreground text-center py-3 px-4 rounded-lg">
+          <p className="text-2xl font-bold tracking-wide">الإصدار الثاني v2.0</p>
+        </div>
+
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-foreground">NLG Font Updater</h1>
@@ -188,7 +223,56 @@ const Index = () => {
                 <Archive className="h-4 w-4" />
                 تحميل الكل (ZIP)
               </Button>
+              <Button onClick={() => setShowDiff(!showDiff)} variant={showDiff ? "default" : "outline"} className="gap-2">
+                <GitCompare className="h-4 w-4" />
+                مقارنة الإحداثيات
+              </Button>
             </div>
+
+            {/* Diff View */}
+            {showDiff && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <GitCompare className="h-5 w-5" />
+                    مقارنة ملف الإحداثيات (الأصلي ↔ الناتج)
+                  </CardTitle>
+                  <CardDescription>
+                    {diffLines.length === 0
+                      ? "✅ الملفان متطابقان تماماً (ما عدا اسم الخط)"
+                      : `⚠️ يوجد ${diffLines.length} سطر مختلف`}
+                  </CardDescription>
+                </CardHeader>
+                {diffLines.length > 0 && (
+                  <CardContent>
+                    <div className="max-h-96 overflow-auto rounded-lg border border-border text-xs font-mono" dir="ltr">
+                      <table className="w-full">
+                        <thead className="sticky top-0 bg-muted">
+                          <tr>
+                            <th className="px-2 py-1 text-left w-12">#</th>
+                            <th className="px-2 py-1 text-left">الأصلي</th>
+                            <th className="px-2 py-1 text-left">الناتج</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {diffLines.map((d) => (
+                            <tr key={d.line} className={
+                              d.status === "changed" ? "bg-yellow-500/10" :
+                              d.status === "added" ? "bg-green-500/10" :
+                              "bg-red-500/10"
+                            }>
+                              <td className="px-2 py-1 text-muted-foreground">{d.line}</td>
+                              <td className="px-2 py-1 text-red-400 break-all">{d.original || "—"}</td>
+                              <td className="px-2 py-1 text-green-400 break-all">{d.generated || "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            )}
 
             {/* Preview */}
             <Card>
