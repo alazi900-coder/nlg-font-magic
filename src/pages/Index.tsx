@@ -313,7 +313,7 @@ ${nlgData.rawHeaderLines.join("\n")}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+            <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-primary/30 rounded-xl cursor-pointer hover:bg-primary/5 hover:border-primary/50 transition-all duration-200">
               <div className="flex flex-col items-center gap-1 text-muted-foreground">
                 <FileText className="h-6 w-6" />
                 <span className="text-xs">اضغط لرفع ملف إحداثيات NLG (.txt)</span>
@@ -329,10 +329,10 @@ ${nlgData.rawHeaderLines.join("\n")}
         </Card>
 
         {/* Upload */}
-        <Card>
+        <Card className="border-2 hover:shadow-lg transition-shadow duration-200">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Upload className="h-5 w-5" />
+              <Upload className="h-5 w-5 text-primary" />
               رفع خط TTF جديد
             </CardTitle>
           </CardHeader>
