@@ -20,6 +20,8 @@ const Index = () => {
   const [selectedGlyph, setSelectedGlyph] = useState<NLGGlyph | null>(null);
   const [showDiff, setShowDiff] = useState(false);
   const [originalText, setOriginalText] = useState<string>("");
+  const [nlgFileName, setNlgFileName] = useState<string>("gb_3.txt (افتراضي)");
+  const [useCustomNlg, setUseCustomNlg] = useState(false);
 
   // Load the reference NLG file on mount
   const loadReference = useCallback(async () => {
@@ -40,6 +42,38 @@ const Index = () => {
   useState(() => {
     loadReference();
   });
+
+  const handleNlgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      setOriginalText(text);
+      const data = parseNLG(text);
+      setNlgData(data);
+      setIsLoaded(true);
+      setUseCustomNlg(true);
+      setNlgFileName(file.name);
+      // Reset previous results
+      setResult(null);
+      setPreviewUrls([]);
+      setSelectedGlyph(null);
+      setShowDiff(false);
+    } catch (err) {
+      console.error("Failed to parse NLG file:", err);
+    }
+  };
+
+  const resetToDefault = async () => {
+    setUseCustomNlg(false);
+    setNlgFileName("gb_3.txt (افتراضي)");
+    setResult(null);
+    setPreviewUrls([]);
+    setSelectedGlyph(null);
+    setShowDiff(false);
+    setIsLoaded(false);
+    loadReference();
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -156,7 +190,14 @@ const Index = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">ملف المرجع</CardTitle>
-              <CardDescription>gb_3.txt</CardDescription>
+              <CardDescription className="flex items-center gap-2">
+                <span>{nlgFileName}</span>
+                {useCustomNlg && (
+                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={resetToDefault}>
+                    إعادة للافتراضي
+                  </Button>
+                )}
+              </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-3 gap-4 text-center">
               <div className="space-y-1">
@@ -174,6 +215,33 @@ const Index = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* NLG File Upload */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              ملف الإحداثيات (NLG)
+            </CardTitle>
+            <CardDescription>
+              اختياري — ارفع ملف .txt مخصص أو استخدم gb_3.txt الافتراضي
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+              <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                <FileText className="h-6 w-6" />
+                <span className="text-xs">اضغط لرفع ملف إحداثيات NLG (.txt)</span>
+              </div>
+              <input
+                type="file"
+                accept=".txt"
+                className="hidden"
+                onChange={handleNlgUpload}
+              />
+            </label>
+          </CardContent>
+        </Card>
 
         {/* Upload */}
         <Card>
