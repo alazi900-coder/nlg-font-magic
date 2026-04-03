@@ -216,6 +216,33 @@ const Index = () => {
           </Card>
         )}
 
+        {/* NLG File Upload */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              ملف الإحداثيات (NLG)
+            </CardTitle>
+            <CardDescription>
+              اختياري — ارفع ملف .txt مخصص أو استخدم gb_3.txt الافتراضي
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+              <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                <FileText className="h-6 w-6" />
+                <span className="text-xs">اضغط لرفع ملف إحداثيات NLG (.txt)</span>
+              </div>
+              <input
+                type="file"
+                accept=".txt"
+                className="hidden"
+                onChange={handleNlgUpload}
+              />
+            </label>
+          </CardContent>
+        </Card>
+
         {/* Upload */}
         <Card>
           <CardHeader>
