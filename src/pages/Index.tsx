@@ -249,17 +249,23 @@ ${nlgData.rawHeaderLines.join("\n")}
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 p-4 md:p-8" dir="rtl">
       <div className="mx-auto max-w-5xl space-y-6">
-        {/* Version Banner */}
-        <div className="bg-primary text-primary-foreground text-center py-3 px-4 rounded-lg">
-          <p className="text-2xl font-bold tracking-wide">الإصدار الثاني v2.0</p>
+        {/* Top Bar */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <span className="text-sm font-medium text-muted-foreground">v2.0</span>
+          </div>
+          <ThemeToggle />
         </div>
 
         {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">NLG Font Updater</h1>
-          <p className="text-muted-foreground">
+        <div className="text-center space-y-3 py-4">
+          <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-l from-primary to-primary/60 bg-clip-text text-transparent">
+            NLG Font Updater
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             أداة تحديث خطوط NLG — ارفع خط TTF جديد لتوليد صورة وإحداثيات محدّثة
           </p>
         </div>
