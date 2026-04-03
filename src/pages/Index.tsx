@@ -43,6 +43,38 @@ const Index = () => {
     loadReference();
   });
 
+  const handleNlgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      setOriginalText(text);
+      const data = parseNLG(text);
+      setNlgData(data);
+      setIsLoaded(true);
+      setUseCustomNlg(true);
+      setNlgFileName(file.name);
+      // Reset previous results
+      setResult(null);
+      setPreviewUrls([]);
+      setSelectedGlyph(null);
+      setShowDiff(false);
+    } catch (err) {
+      console.error("Failed to parse NLG file:", err);
+    }
+  };
+
+  const resetToDefault = async () => {
+    setUseCustomNlg(false);
+    setNlgFileName("gb_3.txt (افتراضي)");
+    setResult(null);
+    setPreviewUrls([]);
+    setSelectedGlyph(null);
+    setShowDiff(false);
+    setIsLoaded(false);
+    loadReference();
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !nlgData) return;
