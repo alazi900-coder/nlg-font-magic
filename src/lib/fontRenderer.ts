@@ -49,9 +49,8 @@ export async function renderFont(
 
     const ctx = pages[page].getContext("2d")!;
 
-    // Scale fontSize proportionally to cell height
-    // Original: fontSize 18 produces renderHeight 28
-    // For cell of height 112: scaledFontSize = 18 * (112 / 28) = 72
+    // Scale bitmap rendering to match the original atlas cell height,
+    // but keep logical width metrics in the original NLG font units.
     const scale = cellHeight / baseRenderHeight;
     const scaledFontSize = baseFontSize * scale;
     const scaledAscent = baseAscent * scale;
@@ -59,11 +58,12 @@ export async function renderFont(
     // Baseline position within the cell
     const baseline = y1 + scaledAscent;
 
-    // Measure advance width with scaled font
+    // widthCol2 is a logical advance metric used by NLG text layout,
+    // so it must be measured at the original font size, not the upscaled atlas size.
     const glyph = font.charToGlyph(charStr);
-    const fontScale = scaledFontSize / font.unitsPerEm;
+    const metricFontScale = baseFontSize / font.unitsPerEm;
     const advanceWidth = glyph && glyph.index !== 0
-      ? Math.ceil((glyph.advanceWidth ?? font.unitsPerEm) * fontScale)
+      ? Math.ceil((glyph.advanceWidth ?? font.unitsPerEm) * metricFontScale)
       : orig.widthCol2;
 
     // Clip to cell boundaries to prevent overlap
