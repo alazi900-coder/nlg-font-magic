@@ -337,10 +337,12 @@ ${nlgData.rawHeaderLines.join("\n")}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-primary/30 rounded-xl cursor-pointer hover:bg-primary/5 hover:border-primary/50 transition-all duration-200">
               <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                <Upload className="h-8 w-8" />
-                <span className="text-sm">اضغط لاختيار ملف TTF</span>
+                <div className="p-3 rounded-full bg-primary/10">
+                  <Upload className="h-8 w-8 text-primary" />
+                </div>
+                <span className="text-sm font-medium">اضغط لاختيار ملف TTF</span>
               </div>
               <input
                 type="file"
