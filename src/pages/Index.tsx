@@ -190,7 +190,14 @@ const Index = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">ملف المرجع</CardTitle>
-              <CardDescription>gb_3.txt</CardDescription>
+              <CardDescription className="flex items-center gap-2">
+                <span>{nlgFileName}</span>
+                {useCustomNlg && (
+                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={resetToDefault}>
+                    إعادة للافتراضي
+                  </Button>
+                )}
+              </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-3 gap-4 text-center">
               <div className="space-y-1">
