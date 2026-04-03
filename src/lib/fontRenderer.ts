@@ -58,14 +58,6 @@ export async function renderFont(
     // Baseline position within the cell
     const baseline = y1 + scaledAscent;
 
-    // widthCol2 is a logical advance metric used by NLG text layout,
-    // so it must be measured at the original font size, not the upscaled atlas size.
-    const glyph = font.charToGlyph(charStr);
-    const metricFontScale = baseFontSize / font.unitsPerEm;
-    const advanceWidth = glyph && glyph.index !== 0
-      ? Math.ceil((glyph.advanceWidth ?? font.unitsPerEm) * metricFontScale)
-      : orig.widthCol2;
-
     // Clip to cell boundaries to prevent overlap
     ctx.save();
     ctx.beginPath();
@@ -85,12 +77,8 @@ export async function renderFont(
 
     ctx.restore();
 
-    // Keep original coordinates, update widthCol2
-    updatedGlyphs.push({
-      ...orig,
-      widthCol2: advanceWidth,
-      rawLine: "",
-    });
+    // Keep ALL original values exactly as-is (no metric changes)
+    updatedGlyphs.push({ ...orig });
   }
 
   return {

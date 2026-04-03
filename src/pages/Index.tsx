@@ -63,7 +63,7 @@ const Index = () => {
 
   const downloadTxt = () => {
     if (!result || !nlgData) return;
-    const text = generateNLGText(result.header, result.glyphs, fontName || undefined);
+    const text = generateNLGText(result.header, result.glyphs, fontName || undefined, nlgData.rawHeaderLines);
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -90,7 +90,7 @@ const Index = () => {
     if (!result || !nlgData) return;
     const zip = new JSZip();
     const name = fontName || "font";
-    const text = generateNLGText(result.header, result.glyphs, name);
+    const text = generateNLGText(result.header, result.glyphs, name, nlgData.rawHeaderLines);
     zip.file(`${name}.txt`, text);
     const blobs = await canvasesToBlob(result.pages);
     blobs.forEach((blob, i) => {

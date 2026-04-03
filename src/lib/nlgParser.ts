@@ -121,20 +121,37 @@ export function parseNLG(text: string): NLGData {
   return { header, glyphs, rawHeaderLines };
 }
 
-export function generateNLGText(header: NLGHeader, glyphs: NLGGlyph[], newFontName?: string): string {
-  const lines: string[] = [
-    "NLG Font Description File",
-    "Version 1.11",
-    `Font "${newFontName ?? header.fontName}" ${header.fontSize} color ${header.colorR} ${header.colorG} ${header.colorB}`,
-    `PageSize ${header.pageSize} PageCount ${header.pageCount} TextType ${header.textType} Distribution ${header.distribution}`,
-    `Height ${header.height} RenderHeight ${header.renderHeight} Ascent ${header.ascent} RenderAscent ${header.renderAscent} IL ${header.il}`,
-    `CharSpacing ${header.charSpacing} LineHeight ${header.lineHeight}`,
-  ];
+export function generateNLGText(header: NLGHeader, glyphs: NLGGlyph[], newFontName?: string, rawHeaderLines?: string[]): string {
+  // Use original header lines to preserve exact formatting
+  let headerLines: string[];
+  if (rawHeaderLines && rawHeaderLines.length >= 6) {
+    headerLines = [...rawHeaderLines];
+    // Only replace the font name in line 2 if a new name is provided
+    if (newFontName) {
+      headerLines[2] = headerLines[2].replace(/"[^"]+"/, `"${newFontName}"`);
+    }
+  } else {
+    headerLines = [
+      "NLG Font Description File",
+      "Version 1.11",
+      `Font "${newFontName ?? header.fontName}" ${header.fontSize} color ${header.colorR} ${header.colorG} ${header.colorB}`,
+      `PageSize ${header.pageSize} PageCount ${header.pageCount} TextType ${header.textType} Distribution ${header.distribution}`,
+      `Height ${header.height} RenderHeight ${header.renderHeight} Ascent ${header.ascent} RenderAscent ${header.renderAscent} IL ${header.il}`,
+      `CharSpacing ${header.charSpacing} LineHeight ${header.lineHeight}`,
+    ];
+  }
+
+  const lines: string[] = [...headerLines];
 
   for (const g of glyphs) {
-    lines.push(
-      `Glyph ${g.charOrUnicode} Width ${g.widthCol1} ${g.widthCol2} ${g.widthCol3} ${g.x1} ${g.y1} ${g.x2} ${g.y2} ${g.page}`
-    );
+    // Use original rawLine to preserve exact formatting (leading zeros, spacing)
+    if (g.rawLine) {
+      lines.push(g.rawLine);
+    } else {
+      lines.push(
+        `Glyph ${g.charOrUnicode} Width ${g.widthCol1} ${g.widthCol2} ${g.widthCol3} ${g.x1} ${g.y1} ${g.x2} ${g.y2} ${g.page}`
+      );
+    }
   }
 
   lines.push("END");
