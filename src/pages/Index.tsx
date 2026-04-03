@@ -169,6 +169,83 @@ const Index = () => {
     URL.revokeObjectURL(url);
   };
 
+  const generateReport = () => {
+    if (!nlgData) return;
+    const genText = getGeneratedText();
+    const origLines = originalText.split(/\r?\n/);
+    const genLines = genText ? genText.split(/\r?\n/) : [];
+    const maxLen = Math.max(origLines.length, genLines.length);
+    let diffCount = 0;
+    const diffs: string[] = [];
+    for (let i = 0; i < maxLen; i++) {
+      const o = origLines[i] ?? "";
+      const g = genLines[i] ?? "";
+      if (o !== g) {
+        diffCount++;
+        diffs.push(`سطر ${i + 1}:\n  أصلي: ${o}\n  ناتج: ${g}`);
+      }
+    }
+
+    // Check for glyphs with rawLine missing
+    const missingRawLine = result ? result.glyphs.filter(g => !g.rawLine).length : 0;
+
+    // Sample first 5 and last 5 glyphs
+    const sampleGlyphs = (list: NLGGlyph[]) => {
+      const first5 = list.slice(0, 5).map(g => g.rawLine || `CP:${g.codePoint} W:${g.widthCol1},${g.widthCol2},${g.widthCol3} [${g.x1},${g.y1},${g.x2},${g.y2}] P${g.page}`);
+      const last5 = list.slice(-5).map(g => g.rawLine || `CP:${g.codePoint} W:${g.widthCol1},${g.widthCol2},${g.widthCol3} [${g.x1},${g.y1},${g.x2},${g.y2}] P${g.page}`);
+      return [...first5, "...", ...last5].join("\n  ");
+    };
+
+    const report = `
+=== تقرير تشخيصي NLG Font Updater v2.0 ===
+التاريخ: ${new Date().toISOString()}
+
+--- ملف المرجع ---
+اسم الملف: ${nlgFileName}
+عدد الأحرف المحللة: ${nlgData.glyphs.length}
+عدد الصفحات: ${nlgData.header.pageCount}
+حجم الخط: ${nlgData.header.fontSize}
+حجم الصفحة: ${nlgData.header.pageSize}
+RenderHeight: ${nlgData.header.renderHeight}
+Ascent: ${nlgData.header.ascent}
+عدد أسطر الملف الأصلي: ${origLines.length}
+
+--- الخط الجديد ---
+اسم الخط: ${fontName || "(لم يُرفع)"}
+${result ? `عدد الصفحات الناتجة: ${result.pages.length}
+عدد الأحرف الناتجة: ${result.glyphs.length}
+أحرف بدون rawLine: ${missingRawLine}` : "لم تتم المعالجة بعد"}
+
+--- المقارنة ---
+عدد أسطر الملف الناتج: ${genLines.length}
+عدد الأسطر المختلفة: ${diffCount}
+${diffs.length > 0 ? `\nالفروقات:\n${diffs.join("\n")}` : "✅ لا فروقات"}
+
+--- عينة أحرف (أصلي) ---
+  ${sampleGlyphs(nlgData.glyphs)}
+
+${result ? `--- عينة أحرف (ناتج) ---
+  ${sampleGlyphs(result.glyphs)}` : ""}
+
+--- Header الأصلي ---
+${nlgData.rawHeaderLines.join("\n")}
+
+=== نهاية التقرير ===
+`.trim();
+
+    navigator.clipboard.writeText(report).then(() => {
+      alert("✅ تم نسخ التقرير! الصقه في المحادثة.");
+    }).catch(() => {
+      // Fallback: download as file
+      const blob = new Blob([report], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "diagnostic_report.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8" dir="rtl">
       <div className="mx-auto max-w-5xl space-y-6">
