@@ -65,13 +65,27 @@ export async function renderFont(
     ctx.clip();
 
     // Draw glyph at original position with scaled size
+    const fillColor = `rgb(${header.colorR}, ${header.colorG}, ${header.colorB})`;
     try {
-      const path = font.getPath(charStr, x1, baseline, scaledFontSize);
-      path.fill = `rgb(${header.colorR}, ${header.colorG}, ${header.colorB})`;
-      path.draw(ctx);
+      // Check if the font actually has this glyph
+      const otGlyph = font.charToGlyph(charStr);
+      const hasGlyph = otGlyph && otGlyph.index !== 0 && otGlyph.name !== '.notdef';
+
+      if (hasGlyph) {
+        const path = font.getPath(charStr, x1, baseline, scaledFontSize);
+        path.fill = fillColor;
+        path.draw(ctx);
+      } else {
+        // Fallback to system font for characters not in the uploaded font
+        ctx.fillStyle = fillColor;
+        ctx.font = `${scaledFontSize}px sans-serif`;
+        ctx.textBaseline = "alphabetic";
+        ctx.fillText(charStr, x1, baseline);
+      }
     } catch {
-      ctx.fillStyle = `rgb(${header.colorR}, ${header.colorG}, ${header.colorB})`;
+      ctx.fillStyle = fillColor;
       ctx.font = `${scaledFontSize}px sans-serif`;
+      ctx.textBaseline = "alphabetic";
       ctx.fillText(charStr, x1, baseline);
     }
 
