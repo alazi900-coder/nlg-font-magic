@@ -421,8 +421,8 @@ ${nlgData.rawHeaderLines.join("\n")}
                               "bg-red-500/10"
                             }>
                               <td className="px-2 py-1 text-muted-foreground">{d.line}</td>
-                              <td className="px-2 py-1 text-red-400 break-all">{d.original || "—"}</td>
-                              <td className="px-2 py-1 text-green-400 break-all">{d.generated || "—"}</td>
+                              <td className="px-2 py-1 text-destructive break-all">{d.original || "—"}</td>
+                              <td className="px-2 py-1 text-primary break-all">{d.generated || "—"}</td>
                             </tr>
                           ))}
                         </tbody>
