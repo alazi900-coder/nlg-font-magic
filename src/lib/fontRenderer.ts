@@ -43,7 +43,7 @@ export async function renderFont(
 
     if (cellHeight <= 0 || cellWidth <= 0) {
       // Zero-size glyph (like space), keep as-is
-      updatedGlyphs.push({ ...orig, rawLine: "" });
+      updatedGlyphs.push({ ...orig });
       continue;
     }
 
