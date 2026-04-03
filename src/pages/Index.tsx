@@ -63,7 +63,7 @@ const Index = () => {
 
   const downloadTxt = () => {
     if (!result || !nlgData) return;
-    const text = generateNLGText(result.header, result.glyphs, fontName || undefined);
+    const text = generateNLGText(result.header, result.glyphs, fontName || undefined, nlgData.rawHeaderLines);
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
