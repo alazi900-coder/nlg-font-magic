@@ -66,6 +66,12 @@ export async function renderFont(
       ? Math.ceil((glyph.advanceWidth ?? font.unitsPerEm) * fontScale)
       : orig.widthCol2;
 
+    // Clip to cell boundaries to prevent overlap
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x1, y1, cellWidth, cellHeight);
+    ctx.clip();
+
     // Draw glyph at original position with scaled size
     try {
       const path = font.getPath(charStr, x1, baseline, scaledFontSize);
@@ -76,6 +82,8 @@ export async function renderFont(
       ctx.font = `${scaledFontSize}px sans-serif`;
       ctx.fillText(charStr, x1, baseline);
     }
+
+    ctx.restore();
 
     // Keep original coordinates, update widthCol2
     updatedGlyphs.push({
