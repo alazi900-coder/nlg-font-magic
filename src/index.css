@@ -100,6 +100,12 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-sm border shadow-sm;
   }
 }

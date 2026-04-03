@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseNLG, generateNLGText, type NLGData, type NLGGlyph } from "@/lib/nlgParser";
 import { renderFont, canvasesToBlob, type RenderedResult } from "@/lib/fontRenderer";
-import { Upload, Download, Eye, FileText, Image as ImageIcon, Loader2, Archive, GitCompare, ClipboardCopy, Bug } from "lucide-react";
+import { Upload, Download, Eye, FileText, Image as ImageIcon, Loader2, Archive, GitCompare, ClipboardCopy, Bug, Sparkles } from "lucide-react";
 import JSZip from "jszip";
 import GlyphDetailPanel from "@/components/GlyphDetailPanel";
 import GlyphPreviewCanvas from "@/components/GlyphPreviewCanvas";
 import SideBySideComparison from "@/components/SideBySideComparison";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Index = () => {
   const [nlgData, setNlgData] = useState<NLGData | null>(null);
@@ -248,26 +249,32 @@ ${nlgData.rawHeaderLines.join("\n")}
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 p-4 md:p-8" dir="rtl">
       <div className="mx-auto max-w-5xl space-y-6">
-        {/* Version Banner */}
-        <div className="bg-primary text-primary-foreground text-center py-3 px-4 rounded-lg">
-          <p className="text-2xl font-bold tracking-wide">الإصدار الثاني v2.0</p>
+        {/* Top Bar */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <span className="text-sm font-medium text-muted-foreground">v2.0</span>
+          </div>
+          <ThemeToggle />
         </div>
 
         {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">NLG Font Updater</h1>
-          <p className="text-muted-foreground">
+        <div className="text-center space-y-3 py-4">
+          <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-l from-primary to-primary/60 bg-clip-text text-transparent">
+            NLG Font Updater
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             أداة تحديث خطوط NLG — ارفع خط TTF جديد لتوليد صورة وإحداثيات محدّثة
           </p>
         </div>
 
         {/* Stats */}
         {nlgData && (
-          <Card>
+          <Card className="glass-card">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">ملف المرجع</CardTitle>
+              <CardTitle className="text-lg">📄 ملف المرجع</CardTitle>
               <CardDescription className="flex items-center gap-2">
                 <span>{nlgFileName}</span>
                 {useCustomNlg && (
@@ -278,15 +285,15 @@ ${nlgData.rawHeaderLines.join("\n")}
               </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-3 gap-4 text-center">
-              <div className="space-y-1">
+              <div className="rounded-xl bg-primary/10 p-4 space-y-1">
                 <p className="text-2xl font-bold text-primary">{nlgData.glyphs.length}</p>
                 <p className="text-xs text-muted-foreground">حرف محلّل</p>
               </div>
-              <div className="space-y-1">
+              <div className="rounded-xl bg-primary/10 p-4 space-y-1">
                 <p className="text-2xl font-bold text-primary">{nlgData.header.pageCount}</p>
                 <p className="text-xs text-muted-foreground">صفحة</p>
               </div>
-              <div className="space-y-1">
+              <div className="rounded-xl bg-primary/10 p-4 space-y-1">
                 <p className="text-2xl font-bold text-primary">{nlgData.header.fontSize}</p>
                 <p className="text-xs text-muted-foreground">حجم الخط</p>
               </div>
@@ -306,7 +313,7 @@ ${nlgData.rawHeaderLines.join("\n")}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+            <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-primary/30 rounded-xl cursor-pointer hover:bg-primary/5 hover:border-primary/50 transition-all duration-200">
               <div className="flex flex-col items-center gap-1 text-muted-foreground">
                 <FileText className="h-6 w-6" />
                 <span className="text-xs">اضغط لرفع ملف إحداثيات NLG (.txt)</span>
@@ -322,18 +329,20 @@ ${nlgData.rawHeaderLines.join("\n")}
         </Card>
 
         {/* Upload */}
-        <Card>
+        <Card className="border-2 hover:shadow-lg transition-shadow duration-200">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Upload className="h-5 w-5" />
+              <Upload className="h-5 w-5 text-primary" />
               رفع خط TTF جديد
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-primary/30 rounded-xl cursor-pointer hover:bg-primary/5 hover:border-primary/50 transition-all duration-200">
               <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                <Upload className="h-8 w-8" />
-                <span className="text-sm">اضغط لاختيار ملف TTF</span>
+                <div className="p-3 rounded-full bg-primary/10">
+                  <Upload className="h-8 w-8 text-primary" />
+                </div>
+                <span className="text-sm font-medium">اضغط لاختيار ملف TTF</span>
               </div>
               <input
                 type="file"
@@ -412,8 +421,8 @@ ${nlgData.rawHeaderLines.join("\n")}
                               "bg-red-500/10"
                             }>
                               <td className="px-2 py-1 text-muted-foreground">{d.line}</td>
-                              <td className="px-2 py-1 text-red-400 break-all">{d.original || "—"}</td>
-                              <td className="px-2 py-1 text-green-400 break-all">{d.generated || "—"}</td>
+                              <td className="px-2 py-1 text-destructive break-all">{d.original || "—"}</td>
+                              <td className="px-2 py-1 text-primary break-all">{d.generated || "—"}</td>
                             </tr>
                           ))}
                         </tbody>
