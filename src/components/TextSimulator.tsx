@@ -102,39 +102,29 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
     if (!canvas || !pages.length) return;
 
     const ctx = canvas.getContext("2d")!;
-    const scale = 3;
+    const dpr = 2;
+    const drawScale = 2; // how much to scale up glyphs
     const canvasWidth = canvas.clientWidth;
     const renderHeight = header.renderHeight;
-    const padding = 24;
-    const canvasH = renderHeight * scale + padding * 2;
-    const cssHeight = Math.max(canvasH / (scale / 2), 100);
+    const padding = 20;
+    const cssHeight = renderHeight * drawScale + padding * 2;
 
-    canvas.width = canvasWidth * 2;
-    canvas.height = canvasH;
+    canvas.width = canvasWidth * dpr;
+    canvas.height = cssHeight * dpr;
     canvas.style.height = `${cssHeight}px`;
+    ctx.scale(dpr, dpr);
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvasWidth, cssHeight);
 
-    // Background
-    ctx.fillStyle = "#1a1a2e";
+    // Background - lighter so glyphs are visible
+    ctx.fillStyle = "#16132b";
     ctx.beginPath();
-    ctx.roundRect(0, 0, canvas.width, canvas.height, 16);
+    ctx.roundRect(0, 0, canvasWidth, cssHeight, 12);
     ctx.fill();
 
-    // Baseline guide
-    ctx.strokeStyle = "rgba(139, 92, 246, 0.15)";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    const baselineY = padding + header.ascent * scale;
-    ctx.beginPath();
-    ctx.moveTo(0, baselineY);
-    ctx.lineTo(canvas.width, baselineY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
     const chars = [...testText];
-    // For RTL, start from the right side
-    let currentX = canvas.width - padding * scale;
+    // RTL: start from right
+    let currentX = canvasWidth - padding;
     const baseY = padding;
     const positions: GlyphPosition[] = [];
 
