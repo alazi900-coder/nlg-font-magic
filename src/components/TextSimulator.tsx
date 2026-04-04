@@ -168,6 +168,25 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
           dir="ltr"
         />
 
+        {/* Character selector buttons - mobile friendly */}
+        <div className="flex gap-1 flex-wrap">
+          {[...testText].map((char, ci) => {
+            const cp = char.codePointAt(0) ?? 0;
+            const hasGlyph = glyphs.some(g => g.codePoint === cp);
+            return (
+              <Button
+                key={ci}
+                size="sm"
+                variant={selectedCharIndex === ci ? "default" : "outline"}
+                className={`min-w-[36px] h-9 text-base font-mono ${!hasGlyph ? 'opacity-40' : ''}`}
+                onClick={() => setSelectedCharIndex(ci)}
+              >
+                {char === ' ' ? '␣' : char}
+              </Button>
+            );
+          })}
+        </div>
+
         {/* Canvas */}
         <div className="relative">
           <canvas
@@ -175,10 +194,6 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
             className="w-full rounded-lg cursor-pointer border border-border"
             onClick={handleCanvasClick}
           />
-          <div className="absolute bottom-2 left-2 flex items-center gap-1 text-xs text-muted-foreground bg-background/80 rounded px-2 py-1">
-            <MousePointerClick className="h-3 w-3" />
-            اضغط على حرف لتعديله
-          </div>
         </div>
 
         {/* Glyph editor */}
