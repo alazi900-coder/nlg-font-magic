@@ -89,6 +89,7 @@ const Index = () => {
       const buffer = await file.arrayBuffer();
       const rendered = await renderFont(buffer, nlgData.header, nlgData.glyphs);
       setResult(rendered);
+      setEditedGlyphs(rendered.glyphs.map(g => ({ ...g })));
 
       // Generate preview URLs
       const urls = rendered.pages.map((canvas) => canvas.toDataURL("image/png"));
