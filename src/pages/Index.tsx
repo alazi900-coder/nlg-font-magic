@@ -179,7 +179,7 @@ const Index = () => {
     if (!result || !nlgData) return;
     const zip = new JSZip();
     const name = fontName || "font";
-    const text = generateNLGText(result.header, result.glyphs, name, nlgData.rawHeaderLines);
+    const text = generateNLGText(result.header, activeGlyphs, name, nlgData.rawHeaderLines);
     zip.file(`${name}.txt`, text);
     const blobs = await canvasesToBlob(result.pages);
     blobs.forEach((blob, i) => {
