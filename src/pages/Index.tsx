@@ -102,10 +102,31 @@ const Index = () => {
     }
   };
 
+  // Get the active glyphs (edited or original)
+  const activeGlyphs = editedGlyphs ?? result?.glyphs ?? [];
+
+  // Handle glyph width updates from the simulator
+  const handleGlyphUpdate = useCallback((index: number, updates: Partial<Pick<NLGGlyph, "widthCol1" | "widthCol2" | "widthCol3">>) => {
+    setEditedGlyphs(prev => {
+      if (!prev) return prev;
+      const next = [...prev];
+      const g = { ...next[index], ...updates };
+      // Update rawLine to reflect new values
+      if (g.rawLine) {
+        g.rawLine = g.rawLine.replace(
+          /Width\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)/,
+          `Width ${g.widthCol1} ${g.widthCol2} ${g.widthCol3}`
+        );
+      }
+      next[index] = g;
+      return next;
+    });
+  }, []);
+
   const getGeneratedText = useCallback(() => {
     if (!result || !nlgData) return "";
-    return generateNLGText(result.header, result.glyphs, fontName || undefined, nlgData.rawHeaderLines);
-  }, [result, nlgData, fontName]);
+    return generateNLGText(result.header, activeGlyphs, fontName || undefined, nlgData.rawHeaderLines);
+  }, [result, nlgData, fontName, activeGlyphs]);
 
   // Compute diff between original and generated
   const diffLines = useMemo(() => {
