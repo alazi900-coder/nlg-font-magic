@@ -24,6 +24,7 @@ const Index = () => {
   const [originalText, setOriginalText] = useState<string>("");
   const [nlgFileName, setNlgFileName] = useState<string>("gb_3.txt (افتراضي)");
   const [useCustomNlg, setUseCustomNlg] = useState(false);
+  const [editedGlyphs, setEditedGlyphs] = useState<NLGGlyph[] | null>(null);
 
   // Load the reference NLG file on mount
   const loadReference = useCallback(async () => {
