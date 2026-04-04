@@ -4,7 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Type, RotateCcw, Search, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Type, RotateCcw, Search, ChevronDown, ChevronUp,
+  MoveHorizontal, ArrowLeftToLine, ArrowRightToLine, Maximize2
+} from "lucide-react";
 import type { NLGGlyph, NLGHeader } from "@/lib/nlgParser";
 
 interface TextSimulatorProps {
@@ -16,9 +19,8 @@ interface TextSimulatorProps {
 
 // Map standard Arabic codepoints to their presentation form ranges
 function getArabicPresentationForms(cp: number): number[] {
-  // Standard Arabic → Presentation Forms B mapping (common forms)
   const arabicToPresB: Record<number, number[]> = {
-    0x0621: [0xFE80], // hamza
+    0x0621: [0xFE80],
     0x0622: [0xFE81, 0xFE82],
     0x0623: [0xFE83, 0xFE84],
     0x0624: [0xFE85, 0xFE86],
@@ -58,14 +60,22 @@ function getArabicPresentationForms(cp: number): number[] {
   return arabicToPresB[cp] || [];
 }
 
+interface GlyphPosition {
+  glyphIdx: number;
+  x: number;
+  width: number;
+  char: string;
+}
+
 const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [testText, setTestText] = useState("مرحبا بالعالم 123");
   const [selectedGlyphIndex, setSelectedGlyphIndex] = useState<number | null>(null);
   const [glyphSearch, setGlyphSearch] = useState("");
   const [showGlyphBrowser, setShowGlyphBrowser] = useState(false);
+  const glyphPositionsRef = useRef<GlyphPosition[]>([]);
 
-  // Build a map from codePoint to glyph index (including presentation forms)
+  // Build a map from codePoint to glyph index
   const glyphMap = useMemo(() => {
     const map = new Map<number, number>();
     glyphs.forEach((g, i) => {
@@ -78,7 +88,6 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
   const findGlyphIndex = useCallback((cp: number): number | undefined => {
     let idx = glyphMap.get(cp);
     if (idx !== undefined) return idx;
-    // Try Arabic presentation forms
     const forms = getArabicPresentationForms(cp);
     for (const form of forms) {
       idx = glyphMap.get(form);
@@ -96,7 +105,7 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
     const scale = 2;
     const canvasWidth = canvas.clientWidth;
     const renderHeight = header.renderHeight;
-    const padding = 20;
+    const padding = 16;
     const canvasH = renderHeight * scale + padding * 2;
 
     canvas.width = canvasWidth * scale;
@@ -105,24 +114,36 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Dark gradient background
-    const grad = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    grad.addColorStop(0, "rgba(15, 10, 30, 0.95)");
-    grad.addColorStop(1, "rgba(25, 15, 45, 0.95)");
-    ctx.fillStyle = grad;
-    ctx.roundRect(0, 0, canvas.width, canvas.height, 12);
+    // Background
+    ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+    ctx.beginPath();
+    ctx.roundRect(0, 0, canvas.width, canvas.height, 16);
     ctx.fill();
+
+    // Grid lines for visual reference
+    ctx.strokeStyle = "rgba(255,255,255,0.05)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < canvas.width; x += 20 * scale) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
+    }
 
     const chars = [...testText];
     let currentX = padding * scale;
     const baseY = padding;
+    const positions: GlyphPosition[] = [];
 
     for (const char of chars) {
       const cp = char.codePointAt(0) ?? 0;
       const glyphIdx = findGlyphIndex(cp);
 
       if (glyphIdx === undefined) {
-        currentX += 10 * scale;
+        // Space or unknown char
+        const spaceWidth = 8 * scale;
+        positions.push({ glyphIdx: -1, x: currentX, width: spaceWidth, char });
+        currentX += spaceWidth;
         continue;
       }
 
@@ -130,6 +151,8 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
       const cellW = g.x2 - g.x1;
       const cellH = g.y2 - g.y1;
       const totalAdvance = g.widthCol1 + g.widthCol2 + g.widthCol3;
+
+      positions.push({ glyphIdx, x: currentX, width: totalAdvance * scale, char });
 
       if (cellW > 0 && cellH > 0 && pages[g.page]) {
         const drawX = currentX + g.widthCol1 * scale;
@@ -140,31 +163,106 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
         );
       }
 
-      // Highlight if this glyph is selected
+      // Highlight selected glyph
       if (selectedGlyphIndex === glyphIdx) {
-        ctx.strokeStyle = "hsl(250, 85%, 65%)";
+        ctx.strokeStyle = "hsl(262, 83%, 58%)";
         ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.strokeRect(currentX, baseY * scale - 2, totalAdvance * scale, renderHeight * scale + 4);
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.roundRect(currentX - 2, baseY * scale - 4, totalAdvance * scale + 4, renderHeight * scale + 8, 4);
+        ctx.stroke();
+
+        // Glow effect
+        ctx.shadowColor = "hsl(262, 83%, 58%)";
+        ctx.shadowBlur = 8;
+        ctx.strokeRect(currentX - 2, baseY * scale - 4, totalAdvance * scale + 4, renderHeight * scale + 8);
+        ctx.shadowBlur = 0;
+
+        // Show width breakdown lines
+        const col1End = currentX + g.widthCol1 * scale;
+        const col2End = col1End + g.widthCol2 * scale;
+
+        // Col1 zone (left offset)
+        if (g.widthCol1 > 0) {
+          ctx.fillStyle = "rgba(139, 92, 246, 0.15)";
+          ctx.fillRect(currentX, baseY * scale - 4, g.widthCol1 * scale, renderHeight * scale + 8);
+        }
+
+        // Col2 zone (glyph width)
+        ctx.fillStyle = "rgba(6, 182, 212, 0.12)";
+        ctx.fillRect(col1End, baseY * scale - 4, g.widthCol2 * scale, renderHeight * scale + 8);
+
+        // Col3 zone (right offset)
+        if (g.widthCol3 > 0) {
+          ctx.fillStyle = "rgba(139, 92, 246, 0.15)";
+          ctx.fillRect(col2End, baseY * scale - 4, g.widthCol3 * scale, renderHeight * scale + 8);
+        }
+
+        // Divider lines
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 2]);
+        [col1End, col2End].forEach(x => {
+          ctx.beginPath();
+          ctx.moveTo(x, baseY * scale - 4);
+          ctx.lineTo(x, baseY * scale + renderHeight * scale + 4);
+          ctx.stroke();
+        });
         ctx.setLineDash([]);
       }
 
       currentX += totalAdvance * scale;
     }
+
+    glyphPositionsRef.current = positions;
   }, [testText, glyphs, pages, header, findGlyphIndex, selectedGlyphIndex]);
+
+  // Handle canvas click/touch to select glyph
+  const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scale = canvas.width / rect.width;
+    
+    let clientX: number;
+    if ('touches' in e) {
+      clientX = e.touches[0]?.clientX ?? (e as any).changedTouches?.[0]?.clientX ?? 0;
+    } else {
+      clientX = e.clientX;
+    }
+    
+    const x = (clientX - rect.left) * scale;
+    
+    for (const pos of glyphPositionsRef.current) {
+      if (x >= pos.x && x <= pos.x + pos.width && pos.glyphIdx >= 0) {
+        setSelectedGlyphIndex(prev => prev === pos.glyphIdx ? null : pos.glyphIdx);
+        return;
+      }
+    }
+  }, []);
 
   const selectedGlyph = selectedGlyphIndex !== null ? glyphs[selectedGlyphIndex] : null;
 
   // Filtered glyph list for browser
   const filteredGlyphs = useMemo(() => {
-    if (!glyphSearch) return glyphs.slice(0, 60);
+    if (!glyphSearch) return glyphs.slice(0, 80);
     const s = glyphSearch.toLowerCase();
     return glyphs.filter(g => {
       const char = g.codePoint > 31 ? String.fromCodePoint(g.codePoint) : "";
       const hex = g.codePoint.toString(16).toUpperCase();
       return char.includes(s) || hex.toLowerCase().includes(s) || g.codePoint.toString().includes(s) || g.charOrUnicode.includes(s);
-    }).slice(0, 60);
+    }).slice(0, 80);
   }, [glyphs, glyphSearch]);
+
+  // Character buttons from the test text for quick selection
+  const textChars = useMemo(() => {
+    const chars = [...testText];
+    return chars.map((char, i) => {
+      const cp = char.codePointAt(0) ?? 0;
+      const glyphIdx = findGlyphIndex(cp);
+      return { char, cp, glyphIdx: glyphIdx ?? -1, index: i };
+    });
+  }, [testText, findGlyphIndex]);
 
   const handleReset = (field: "widthCol1" | "widthCol2" | "widthCol3") => {
     if (selectedGlyphIndex === null) return;
@@ -190,164 +288,152 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
   };
 
   return (
-    <div className="space-y-4">
-      {/* Simulator Card */}
-      <Card className="glass-card card-hover overflow-hidden">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
+    <div className="space-y-3">
+      {/* Main Simulator */}
+      <Card className="glass-card overflow-hidden border-primary/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
             <div className="p-1.5 rounded-lg gradient-primary">
               <Type className="h-4 w-4 text-primary-foreground" />
             </div>
             <span>محاكي نص اللعبة</span>
+            <Badge variant="secondary" className="text-[10px] mr-auto">تفاعلي</Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
+          {/* Text input */}
           <Input
             value={testText}
             onChange={(e) => setTestText(e.target.value)}
             placeholder="اكتب جملة تجريبية..."
-            className="text-lg h-12 bg-secondary/50 border-border/50 focus:border-primary/50"
-            dir="ltr"
+            className="text-base h-11 bg-secondary/50 border-border/50 focus:border-primary/50"
+            dir="auto"
           />
-          <canvas
-            ref={canvasRef}
-            className="w-full rounded-xl border border-border/30"
-          />
+
+          {/* Canvas with touch support */}
+          <div className="relative">
+            <canvas
+              ref={canvasRef}
+              className="w-full rounded-xl border border-border/30 cursor-pointer touch-manipulation"
+              onClick={handleCanvasClick}
+              onTouchEnd={handleCanvasClick}
+            />
+            <p className="text-[10px] text-muted-foreground text-center mt-1">
+              اضغط على أي حرف لتعديله
+            </p>
+          </div>
+
+          {/* Quick character buttons */}
+          <div className="flex flex-wrap gap-1.5">
+            {textChars.map((c, i) => {
+              const isSpace = c.char === ' ';
+              const isFound = c.glyphIdx >= 0;
+              const isSelected = selectedGlyphIndex === c.glyphIdx && c.glyphIdx >= 0;
+              
+              if (isSpace) return <div key={i} className="w-3" />;
+              
+              return (
+                <button
+                  key={i}
+                  onClick={() => isFound ? setSelectedGlyphIndex(isSelected ? null : c.glyphIdx) : undefined}
+                  disabled={!isFound}
+                  className={`
+                    min-w-[36px] h-9 px-2 rounded-lg text-sm font-medium
+                    transition-all duration-200 border
+                    ${isSelected
+                      ? 'gradient-primary text-primary-foreground border-primary shadow-lg scale-110'
+                      : isFound
+                        ? 'bg-secondary/80 hover:bg-secondary border-border/50 hover:border-primary/40 hover:scale-105 active:scale-95'
+                        : 'bg-muted/30 border-border/20 text-muted-foreground/50 cursor-not-allowed'
+                    }
+                  `}
+                >
+                  {c.char}
+                </button>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Glyph Browser Card */}
-      <Card className="glass-card card-hover overflow-hidden">
-        <CardHeader className="pb-3 cursor-pointer" onClick={() => setShowGlyphBrowser(!showGlyphBrowser)}>
-          <CardTitle className="text-lg flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg gradient-accent">
-                <Search className="h-4 w-4 text-accent-foreground" />
-              </div>
-              <span>متصفح الأحرف</span>
-              <Badge variant="secondary" className="text-xs">{glyphs.length}</Badge>
-            </div>
-            {showGlyphBrowser ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </CardTitle>
-        </CardHeader>
-        {showGlyphBrowser && (
-          <CardContent className="space-y-3">
-            <Input
-              value={glyphSearch}
-              onChange={(e) => setGlyphSearch(e.target.value)}
-              placeholder="ابحث بالحرف أو الكود (مثال: م أو 0645)..."
-              className="bg-secondary/50 border-border/50"
-              dir="ltr"
-            />
-            <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1.5 max-h-64 overflow-y-auto p-1">
-              {filteredGlyphs.map((g, i) => {
-                const glyphIdx = glyphs.indexOf(g);
-                const char = g.codePoint > 31 ? String.fromCodePoint(g.codePoint) : "·";
-                const isSelected = selectedGlyphIndex === glyphIdx;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedGlyphIndex(isSelected ? null : glyphIdx)}
-                    className={`
-                      flex flex-col items-center justify-center p-1.5 rounded-lg text-sm font-mono
-                      transition-all duration-200 border
-                      ${isSelected
-                        ? 'gradient-primary text-primary-foreground border-primary glow-primary scale-105'
-                        : 'bg-secondary/50 hover:bg-secondary border-border/30 hover:border-primary/30 hover:scale-105'
-                      }
-                    `}
-                    title={`U+${g.codePoint.toString(16).toUpperCase().padStart(4, "0")}`}
-                  >
-                    <span className="text-base leading-tight">{char}</span>
-                    <span className={`text-[8px] leading-tight ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                      {g.codePoint.toString(16).toUpperCase().padStart(4, "0")}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            {filteredGlyphs.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground py-4">لا نتائج</p>
-            )}
-          </CardContent>
-        )}
-      </Card>
-
-      {/* Glyph Editor */}
+      {/* Glyph Editor - appears when a glyph is selected */}
       {selectedGlyph && selectedGlyphIndex !== null && (
-        <Card className="glass-card border-primary/30 glow-primary overflow-hidden">
-          <CardHeader className="pb-3">
+        <Card className="glass-card border-primary/30 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 flex items-center justify-center rounded-xl gradient-primary text-2xl font-mono text-primary-foreground shadow-lg">
+                <div className="w-12 h-12 flex items-center justify-center rounded-xl gradient-primary text-xl font-mono text-primary-foreground shadow-lg">
                   {selectedGlyph.codePoint > 31 ? String.fromCodePoint(selectedGlyph.codePoint) : "·"}
                 </div>
                 <div>
-                  <Badge className="font-mono text-xs gradient-primary border-0">
+                  <Badge className="font-mono text-[10px] gradient-primary border-0">
                     U+{selectedGlyph.codePoint.toString(16).toUpperCase().padStart(4, "0")}
                   </Badge>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    إجمالي: <span className="font-mono font-bold text-foreground">{selectedGlyph.widthCol1 + selectedGlyph.widthCol2 + selectedGlyph.widthCol3}</span>px
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <MoveHorizontal className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      إجمالي: <span className="font-mono font-bold text-foreground">{selectedGlyph.widthCol1 + selectedGlyph.widthCol2 + selectedGlyph.widthCol3}</span>px
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="flex gap-1">
-                <Button variant="outline" size="sm" className="text-xs gap-1" onClick={handleResetAll}>
+                <Button variant="outline" size="sm" className="text-[10px] gap-1 h-7 px-2" onClick={handleResetAll}>
                   <RotateCcw className="h-3 w-3" />
-                  إعادة الكل
+                  إعادة
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedGlyphIndex(null)}>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setSelectedGlyphIndex(null)}>
                   ✕
                 </Button>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <SliderField
+          <CardContent className="space-y-3 pb-4">
+            <EditorField
               label="إزاحة يسار"
-              tag="Col1"
+              icon={<ArrowRightToLine className="h-3.5 w-3.5" />}
               value={selectedGlyph.widthCol1}
               onChange={(v) => onGlyphUpdate(selectedGlyphIndex, { widthCol1: v })}
               onReset={() => handleReset("widthCol1")}
               min={-20} max={50}
-              color="hsl(var(--primary))"
+              colorClass="bg-primary/20 text-primary"
             />
-            <SliderField
+            <EditorField
               label="عرض الحرف"
-              tag="Col2"
+              icon={<Maximize2 className="h-3.5 w-3.5" />}
               value={selectedGlyph.widthCol2}
               onChange={(v) => onGlyphUpdate(selectedGlyphIndex, { widthCol2: v })}
               onReset={() => handleReset("widthCol2")}
               min={0} max={80}
-              color="hsl(var(--accent))"
+              colorClass="bg-accent/20 text-accent"
             />
-            <SliderField
+            <EditorField
               label="إزاحة يمين"
-              tag="Col3"
+              icon={<ArrowLeftToLine className="h-3.5 w-3.5" />}
               value={selectedGlyph.widthCol3}
               onChange={(v) => onGlyphUpdate(selectedGlyphIndex, { widthCol3: v })}
               onReset={() => handleReset("widthCol3")}
               min={-20} max={50}
-              color="hsl(var(--primary))"
+              colorClass="bg-primary/20 text-primary"
             />
 
-            {/* Visual width diagram */}
-            <div className="bg-secondary/30 rounded-xl p-3 space-y-2">
-              <p className="text-xs text-muted-foreground text-center">توزيع العرض</p>
-              <div className="flex items-center gap-0.5 h-6 rounded-lg overflow-hidden">
+            {/* Visual width bar */}
+            <div className="bg-secondary/30 rounded-lg p-2.5">
+              <p className="text-[10px] text-muted-foreground text-center mb-1.5">توزيع العرض</p>
+              <div className="flex items-center gap-px h-7 rounded-lg overflow-hidden">
                 {selectedGlyph.widthCol1 > 0 && (
                   <div
-                    className="h-full gradient-primary opacity-50 flex items-center justify-center text-[9px] text-primary-foreground font-mono"
+                    className="h-full bg-primary/30 flex items-center justify-center text-[9px] text-primary font-mono font-bold rounded-r"
                     style={{ flex: selectedGlyph.widthCol1 }}
                   >{selectedGlyph.widthCol1}</div>
                 )}
                 <div
-                  className="h-full gradient-accent flex items-center justify-center text-[9px] text-accent-foreground font-mono"
+                  className="h-full bg-accent/40 flex items-center justify-center text-[9px] text-accent-foreground font-mono font-bold"
                   style={{ flex: Math.max(selectedGlyph.widthCol2, 1) }}
                 >{selectedGlyph.widthCol2}</div>
                 {selectedGlyph.widthCol3 > 0 && (
                   <div
-                    className="h-full gradient-primary opacity-50 flex items-center justify-center text-[9px] text-primary-foreground font-mono"
+                    className="h-full bg-primary/30 flex items-center justify-center text-[9px] text-primary font-mono font-bold rounded-l"
                     style={{ flex: selectedGlyph.widthCol3 }}
                   >{selectedGlyph.widthCol3}</div>
                 )}
@@ -356,36 +442,98 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
           </CardContent>
         </Card>
       )}
+
+      {/* Glyph Browser */}
+      <Card className="glass-card overflow-hidden">
+        <CardHeader
+          className="pb-2 cursor-pointer select-none"
+          onClick={() => setShowGlyphBrowser(!showGlyphBrowser)}
+        >
+          <CardTitle className="text-base flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-accent/10">
+                <Search className="h-4 w-4 text-accent" />
+              </div>
+              <span>متصفح الأحرف</span>
+              <Badge variant="secondary" className="text-[10px]">{glyphs.length}</Badge>
+            </div>
+            {showGlyphBrowser ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          </CardTitle>
+        </CardHeader>
+        {showGlyphBrowser && (
+          <CardContent className="space-y-3 pt-0">
+            <Input
+              value={glyphSearch}
+              onChange={(e) => setGlyphSearch(e.target.value)}
+              placeholder="ابحث بالحرف أو الكود (مثال: م أو 0645)..."
+              className="bg-secondary/50 border-border/50 h-9 text-sm"
+              dir="auto"
+            />
+            <div className="grid grid-cols-7 sm:grid-cols-10 gap-1 max-h-52 overflow-y-auto p-0.5">
+              {filteredGlyphs.map((g) => {
+                const glyphIdx = glyphs.indexOf(g);
+                const char = g.codePoint > 31 ? String.fromCodePoint(g.codePoint) : "·";
+                const isSelected = selectedGlyphIndex === glyphIdx;
+                return (
+                  <button
+                    key={glyphIdx}
+                    onClick={() => setSelectedGlyphIndex(isSelected ? null : glyphIdx)}
+                    className={`
+                      flex flex-col items-center justify-center p-1 rounded-lg text-xs
+                      transition-all duration-150 border
+                      ${isSelected
+                        ? 'gradient-primary text-primary-foreground border-primary scale-110 shadow-md'
+                        : 'bg-secondary/40 hover:bg-secondary border-border/20 hover:border-primary/30 active:scale-95'
+                      }
+                    `}
+                    title={`U+${g.codePoint.toString(16).toUpperCase().padStart(4, "0")}`}
+                  >
+                    <span className="text-sm leading-tight">{char}</span>
+                    <span className={`text-[7px] leading-tight font-mono ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground/60'}`}>
+                      {g.codePoint.toString(16).toUpperCase().padStart(4, "0")}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {filteredGlyphs.length === 0 && (
+              <p className="text-center text-xs text-muted-foreground py-3">لا نتائج</p>
+            )}
+          </CardContent>
+        )}
+      </Card>
     </div>
   );
 };
 
-function SliderField({ label, tag, value, onChange, onReset, min, max, color }: {
+function EditorField({ label, icon, value, onChange, onReset, min, max, colorClass }: {
   label: string;
-  tag: string;
+  icon: React.ReactNode;
   value: number;
   onChange: (v: number) => void;
   onReset: () => void;
   min: number;
   max: number;
-  color: string;
+  colorClass: string;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">{label}</span>
-          <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0">{tag}</Badge>
+          <div className={`p-1 rounded-md ${colorClass}`}>
+            {icon}
+          </div>
+          <span className="text-xs font-medium">{label}</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           <Input
             type="number"
             value={value}
             onChange={(e) => onChange(parseInt(e.target.value) || 0)}
-            className="w-16 h-8 text-xs text-center font-mono bg-secondary/50 border-border/50"
+            className="w-14 h-7 text-xs text-center font-mono bg-secondary/50 border-border/50"
           />
-          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={onReset} title="إعادة للأصل">
-            <RotateCcw className="h-3.5 w-3.5" />
+          <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-primary" onClick={onReset} title="إعادة للأصل">
+            <RotateCcw className="h-3 w-3" />
           </Button>
         </div>
       </div>
