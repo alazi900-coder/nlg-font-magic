@@ -502,6 +502,14 @@ ${nlgData.rawHeaderLines.join("\n")}
               </CardContent>
             </Card>
 
+            {/* Text Simulator */}
+            <TextSimulator
+              glyphs={activeGlyphs}
+              pages={result.pages}
+              header={result.header}
+              onGlyphUpdate={handleGlyphUpdate}
+            />
+
             {/* Side-by-side comparison */}
             <SideBySideComparison
               newImageUrl={previewUrls[selectedPage]}
