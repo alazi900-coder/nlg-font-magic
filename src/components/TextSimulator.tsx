@@ -217,20 +217,19 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const scale = canvas.width / rect.width;
-    
+
     let clientX: number;
-    if ('touches' in e) {
-      clientX = e.touches[0]?.clientX ?? (e as any).changedTouches?.[0]?.clientX ?? 0;
+    if ("touches" in e) {
+      clientX = e.touches[0]?.clientX ?? (e as React.TouchEvent<HTMLCanvasElement>).changedTouches?.[0]?.clientX ?? 0;
     } else {
       clientX = e.clientX;
     }
-    
-    const x = (clientX - rect.left) * scale;
-    
+
+    const x = clientX - rect.left;
+
     for (const pos of glyphPositionsRef.current) {
       if (x >= pos.x && x <= pos.x + pos.width && pos.glyphIdx >= 0) {
-        setSelectedGlyphIndex(prev => prev === pos.glyphIdx ? null : pos.glyphIdx);
+        setSelectedGlyphIndex((prev) => (prev === pos.glyphIdx ? null : pos.glyphIdx));
         return;
       }
     }
