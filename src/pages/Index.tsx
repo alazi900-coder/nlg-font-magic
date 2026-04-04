@@ -8,6 +8,7 @@ import JSZip from "jszip";
 import GlyphDetailPanel from "@/components/GlyphDetailPanel";
 import GlyphPreviewCanvas from "@/components/GlyphPreviewCanvas";
 import SideBySideComparison from "@/components/SideBySideComparison";
+import TextSimulator from "@/components/TextSimulator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Index = () => {
@@ -23,6 +24,7 @@ const Index = () => {
   const [originalText, setOriginalText] = useState<string>("");
   const [nlgFileName, setNlgFileName] = useState<string>("gb_3.txt (افتراضي)");
   const [useCustomNlg, setUseCustomNlg] = useState(false);
+  const [editedGlyphs, setEditedGlyphs] = useState<NLGGlyph[] | null>(null);
 
   // Load the reference NLG file on mount
   const loadReference = useCallback(async () => {
@@ -87,6 +89,7 @@ const Index = () => {
       const buffer = await file.arrayBuffer();
       const rendered = await renderFont(buffer, nlgData.header, nlgData.glyphs);
       setResult(rendered);
+      setEditedGlyphs(rendered.glyphs.map(g => ({ ...g })));
 
       // Generate preview URLs
       const urls = rendered.pages.map((canvas) => canvas.toDataURL("image/png"));
@@ -99,10 +102,31 @@ const Index = () => {
     }
   };
 
+  // Get the active glyphs (edited or original)
+  const activeGlyphs = editedGlyphs ?? result?.glyphs ?? [];
+
+  // Handle glyph width updates from the simulator
+  const handleGlyphUpdate = useCallback((index: number, updates: Partial<Pick<NLGGlyph, "widthCol1" | "widthCol2" | "widthCol3">>) => {
+    setEditedGlyphs(prev => {
+      if (!prev) return prev;
+      const next = [...prev];
+      const g = { ...next[index], ...updates };
+      // Update rawLine to reflect new values
+      if (g.rawLine) {
+        g.rawLine = g.rawLine.replace(
+          /Width\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)/,
+          `Width ${g.widthCol1} ${g.widthCol2} ${g.widthCol3}`
+        );
+      }
+      next[index] = g;
+      return next;
+    });
+  }, []);
+
   const getGeneratedText = useCallback(() => {
     if (!result || !nlgData) return "";
-    return generateNLGText(result.header, result.glyphs, fontName || undefined, nlgData.rawHeaderLines);
-  }, [result, nlgData, fontName]);
+    return generateNLGText(result.header, activeGlyphs, fontName || undefined, nlgData.rawHeaderLines);
+  }, [result, nlgData, fontName, activeGlyphs]);
 
   // Compute diff between original and generated
   const diffLines = useMemo(() => {
@@ -128,7 +152,7 @@ const Index = () => {
 
   const downloadTxt = () => {
     if (!result || !nlgData) return;
-    const text = generateNLGText(result.header, result.glyphs, fontName || undefined, nlgData.rawHeaderLines);
+    const text = generateNLGText(result.header, activeGlyphs, fontName || undefined, nlgData.rawHeaderLines);
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -155,7 +179,7 @@ const Index = () => {
     if (!result || !nlgData) return;
     const zip = new JSZip();
     const name = fontName || "font";
-    const text = generateNLGText(result.header, result.glyphs, name, nlgData.rawHeaderLines);
+    const text = generateNLGText(result.header, activeGlyphs, name, nlgData.rawHeaderLines);
     zip.file(`${name}.txt`, text);
     const blobs = await canvasesToBlob(result.pages);
     blobs.forEach((blob, i) => {
@@ -477,6 +501,14 @@ ${nlgData.rawHeaderLines.join("\n")}
                 )}
               </CardContent>
             </Card>
+
+            {/* Text Simulator */}
+            <TextSimulator
+              glyphs={activeGlyphs}
+              pages={result.pages}
+              header={result.header}
+              onGlyphUpdate={handleGlyphUpdate}
+            />
 
             {/* Side-by-side comparison */}
             <SideBySideComparison
