@@ -8,6 +8,7 @@ import JSZip from "jszip";
 import GlyphDetailPanel from "@/components/GlyphDetailPanel";
 import GlyphPreviewCanvas from "@/components/GlyphPreviewCanvas";
 import SideBySideComparison from "@/components/SideBySideComparison";
+import TextSimulator from "@/components/TextSimulator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Index = () => {
