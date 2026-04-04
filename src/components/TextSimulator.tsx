@@ -101,31 +101,50 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
     const canvas = canvasRef.current;
     if (!canvas || !pages.length) return;
 
-    const ctx = canvas.getContext("2d")!;
-    const dpr = 2;
-    const drawScale = 2; // how much to scale up glyphs
-    const canvasWidth = canvas.clientWidth;
-    const renderHeight = header.renderHeight;
-    const padding = 20;
-    const cssHeight = renderHeight * drawScale + padding * 2;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    canvas.width = canvasWidth * dpr;
-    canvas.height = cssHeight * dpr;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const lineScale = 2.1;
+    const previewScale = 4.2;
+    const canvasWidth = Math.max(canvas.clientWidth, 280);
+    const padding = 16;
+    const textRowTop = padding;
+    const textRowHeight = header.renderHeight * lineScale;
+    const textRowBottom = textRowTop + textRowHeight;
+    const selectedGlyphForPreview = selectedGlyphIndex !== null ? glyphs[selectedGlyphIndex] : null;
+    const previewAreaHeight = selectedGlyphForPreview ? header.renderHeight * previewScale + 78 : 0;
+    const cssHeight = padding + textRowHeight + 18 + previewAreaHeight + padding;
+
+    canvas.width = Math.floor(canvasWidth * dpr);
+    canvas.height = Math.floor(cssHeight * dpr);
+    canvas.style.width = "100%";
     canvas.style.height = `${cssHeight}px`;
-    ctx.scale(dpr, dpr);
 
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, canvasWidth, cssHeight);
 
-    // Background - lighter so glyphs are visible
-    ctx.fillStyle = "#16132b";
+    ctx.fillStyle = "hsl(246 32% 14%)";
     ctx.beginPath();
-    ctx.roundRect(0, 0, canvasWidth, cssHeight, 12);
+    ctx.roundRect(0, 0, canvasWidth, cssHeight, 18);
     ctx.fill();
 
+    ctx.fillStyle = "hsl(248 28% 18%)";
+    ctx.beginPath();
+    ctx.roundRect(12, textRowTop, canvasWidth - 24, textRowHeight, 14);
+    ctx.fill();
+
+    ctx.strokeStyle = "hsl(0 0% 100% / 0.05)";
+    ctx.lineWidth = 1;
+    for (let gridX = 20; gridX < canvasWidth - 20; gridX += 24) {
+      ctx.beginPath();
+      ctx.moveTo(gridX, textRowTop + 6);
+      ctx.lineTo(gridX, textRowBottom - 6);
+      ctx.stroke();
+    }
+
     const chars = [...testText];
-    // RTL: start from right
     let currentX = canvasWidth - padding;
-    const baseY = padding;
     const positions: GlyphPosition[] = [];
 
     for (const char of chars) {
@@ -133,7 +152,7 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
       const glyphIdx = findGlyphIndex(cp);
 
       if (glyphIdx === undefined) {
-        const spaceWidth = 10 * drawScale;
+        const spaceWidth = 10 * lineScale;
         currentX -= spaceWidth;
         positions.push({ glyphIdx: -1, x: currentX, width: spaceWidth, char });
         continue;
@@ -142,74 +161,143 @@ const TextSimulator = ({ glyphs, pages, header, onGlyphUpdate }: TextSimulatorPr
       const g = glyphs[glyphIdx];
       const cellW = g.x2 - g.x1;
       const cellH = g.y2 - g.y1;
-      const totalAdvance = g.widthCol1 + g.widthCol2 + g.widthCol3;
+      const totalAdvance = Math.max(g.widthCol1 + g.widthCol2 + g.widthCol3, 1);
+      const advanceWidth = totalAdvance * lineScale;
 
-      currentX -= totalAdvance * drawScale;
-      positions.push({ glyphIdx, x: currentX, width: totalAdvance * drawScale, char });
+      currentX -= advanceWidth;
+      positions.push({ glyphIdx, x: currentX, width: advanceWidth, char });
 
       if (cellW > 0 && cellH > 0 && pages[g.page]) {
-        const drawX = currentX + g.widthCol1 * drawScale;
+        const drawX = currentX + g.widthCol1 * lineScale;
+        const drawY = textRowTop + Math.max(0, textRowHeight - cellH * lineScale);
         ctx.drawImage(
           pages[g.page],
-          g.x1, g.y1, cellW, cellH,
-          drawX, baseY, cellW * drawScale, cellH * drawScale
+          g.x1,
+          g.y1,
+          cellW,
+          cellH,
+          drawX,
+          drawY,
+          cellW * lineScale,
+          cellH * lineScale,
         );
       }
 
-      // Highlight selected glyph
       if (selectedGlyphIndex === glyphIdx) {
-        ctx.fillStyle = "rgba(139, 92, 246, 0.08)";
-        ctx.fillRect(currentX - 2, 0, totalAdvance * drawScale + 4, cssHeight);
+        const col1End = currentX + g.widthCol1 * lineScale;
+        const col2End = col1End + g.widthCol2 * lineScale;
 
-        ctx.strokeStyle = "hsl(262, 83%, 58%)";
-        ctx.lineWidth = 2;
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        ctx.roundRect(currentX - 2, baseY - 4, totalAdvance * drawScale + 4, renderHeight * drawScale + 8, 6);
-        ctx.stroke();
-
-        ctx.shadowColor = "hsl(262, 83%, 58%)";
-        ctx.shadowBlur = 12;
-        ctx.strokeRect(currentX - 2, baseY - 4, totalAdvance * drawScale + 4, renderHeight * drawScale + 8);
-        ctx.shadowBlur = 0;
-
-        const col1End = currentX + g.widthCol1 * drawScale;
-        const col2End = col1End + g.widthCol2 * drawScale;
+        ctx.fillStyle = "hsl(262 83% 58% / 0.08)";
+        ctx.fillRect(currentX - 2, textRowTop - 4, advanceWidth + 4, textRowHeight + 8);
 
         if (g.widthCol1 > 0) {
-          ctx.fillStyle = "rgba(168, 85, 247, 0.3)";
-          ctx.fillRect(currentX, baseY - 4, g.widthCol1 * drawScale, renderHeight * drawScale + 8);
-        }
-        ctx.fillStyle = "rgba(34, 211, 238, 0.2)";
-        ctx.fillRect(col1End, baseY - 4, g.widthCol2 * drawScale, renderHeight * drawScale + 8);
-        if (g.widthCol3 > 0) {
-          ctx.fillStyle = "rgba(168, 85, 247, 0.3)";
-          ctx.fillRect(col2End, baseY - 4, g.widthCol3 * drawScale, renderHeight * drawScale + 8);
+          ctx.fillStyle = "hsl(262 83% 58% / 0.28)";
+          ctx.fillRect(currentX, textRowTop, g.widthCol1 * lineScale, textRowHeight);
         }
 
-        ctx.strokeStyle = "rgba(255,255,255,0.4)";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        [col1End, col2End].forEach(x => {
+        ctx.fillStyle = "hsl(174 67% 55% / 0.28)";
+        ctx.fillRect(col1End, textRowTop, Math.max(g.widthCol2 * lineScale, 1), textRowHeight);
+
+        if (g.widthCol3 > 0) {
+          ctx.fillStyle = "hsl(262 83% 58% / 0.28)";
+          ctx.fillRect(col2End, textRowTop, g.widthCol3 * lineScale, textRowHeight);
+        }
+
+        ctx.strokeStyle = "hsl(268 100% 72%)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(currentX - 2, textRowTop - 4, advanceWidth + 4, textRowHeight + 8, 8);
+        ctx.stroke();
+
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = "hsl(0 0% 100% / 0.35)";
+        [col1End, col2End].forEach((dividerX) => {
           ctx.beginPath();
-          ctx.moveTo(x, baseY - 4);
-          ctx.lineTo(x, baseY + renderHeight * drawScale + 4);
+          ctx.moveTo(dividerX, textRowTop - 4);
+          ctx.lineTo(dividerX, textRowBottom + 4);
           ctx.stroke();
         });
         ctx.setLineDash([]);
-
-        ctx.font = "9px monospace";
-        ctx.textAlign = "center";
-        ctx.fillStyle = "rgba(168, 85, 247, 0.9)";
-        if (g.widthCol1 > 0) ctx.fillText(`${g.widthCol1}`, currentX + g.widthCol1 * drawScale / 2, baseY + renderHeight * drawScale + 14);
-        ctx.fillStyle = "rgba(34, 211, 238, 1)";
-        ctx.fillText(`${g.widthCol2}`, col1End + g.widthCol2 * drawScale / 2, baseY + renderHeight * drawScale + 14);
-        ctx.fillStyle = "rgba(168, 85, 247, 0.9)";
-        if (g.widthCol3 > 0) ctx.fillText(`${g.widthCol3}`, col2End + g.widthCol3 * drawScale / 2, baseY + renderHeight * drawScale + 14);
       }
     }
 
     glyphPositionsRef.current = positions;
+
+    if (selectedGlyphForPreview) {
+      const g = selectedGlyphForPreview;
+      const totalAdvance = Math.max(g.widthCol1 + g.widthCol2 + g.widthCol3, 1);
+      const cellW = g.x2 - g.x1;
+      const cellH = g.y2 - g.y1;
+      const previewTop = textRowBottom + 22;
+      const previewHeight = header.renderHeight * previewScale + 54;
+      const previewInnerTop = previewTop + 18;
+      const previewAdvanceWidth = totalAdvance * previewScale;
+      const previewX = (canvasWidth - previewAdvanceWidth) / 2;
+      const previewY = previewInnerTop + Math.max(0, header.renderHeight * previewScale - cellH * previewScale);
+      const col1End = previewX + g.widthCol1 * previewScale;
+      const col2End = col1End + g.widthCol2 * previewScale;
+
+      ctx.fillStyle = "hsl(246 26% 19%)";
+      ctx.beginPath();
+      ctx.roundRect(12, previewTop, canvasWidth - 24, previewHeight, 16);
+      ctx.fill();
+
+      ctx.fillStyle = "hsl(0 0% 100% / 0.88)";
+      ctx.font = "12px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("معاينة مكبرة للحرف المحدد", canvasWidth / 2, previewTop + 14);
+
+      if (g.widthCol1 > 0) {
+        ctx.fillStyle = "hsl(262 83% 58% / 0.3)";
+        ctx.fillRect(previewX, previewInnerTop, g.widthCol1 * previewScale, header.renderHeight * previewScale);
+      }
+
+      ctx.fillStyle = "hsl(174 67% 55% / 0.34)";
+      ctx.fillRect(col1End, previewInnerTop, Math.max(g.widthCol2 * previewScale, 1), header.renderHeight * previewScale);
+
+      if (g.widthCol3 > 0) {
+        ctx.fillStyle = "hsl(262 83% 58% / 0.3)";
+        ctx.fillRect(col2End, previewInnerTop, g.widthCol3 * previewScale, header.renderHeight * previewScale);
+      }
+
+      ctx.strokeStyle = "hsl(268 100% 72%)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(previewX - 2, previewInnerTop - 2, previewAdvanceWidth + 4, header.renderHeight * previewScale + 4, 10);
+      ctx.stroke();
+
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = "hsl(0 0% 100% / 0.35)";
+      [col1End, col2End].forEach((dividerX) => {
+        ctx.beginPath();
+        ctx.moveTo(dividerX, previewInnerTop - 2);
+        ctx.lineTo(dividerX, previewInnerTop + header.renderHeight * previewScale + 2);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+
+      if (cellW > 0 && cellH > 0 && pages[g.page]) {
+        ctx.drawImage(
+          pages[g.page],
+          g.x1,
+          g.y1,
+          cellW,
+          cellH,
+          previewX + g.widthCol1 * previewScale,
+          previewY,
+          cellW * previewScale,
+          cellH * previewScale,
+        );
+      }
+
+      ctx.font = "bold 13px monospace";
+      ctx.fillStyle = "hsl(262 83% 72%)";
+      if (g.widthCol1 > 0) ctx.fillText(`${g.widthCol1}`, previewX + (g.widthCol1 * previewScale) / 2, previewInnerTop + header.renderHeight * previewScale + 20);
+      ctx.fillStyle = "hsl(174 67% 72%)";
+      ctx.fillText(`${g.widthCol2}`, col1End + (g.widthCol2 * previewScale) / 2, previewInnerTop + header.renderHeight * previewScale + 20);
+      ctx.fillStyle = "hsl(262 83% 72%)";
+      if (g.widthCol3 > 0) ctx.fillText(`${g.widthCol3}`, col2End + (g.widthCol3 * previewScale) / 2, previewInnerTop + header.renderHeight * previewScale + 20);
+    }
   }, [testText, glyphs, pages, header, findGlyphIndex, selectedGlyphIndex]);
 
   // Handle canvas click/touch to select glyph
